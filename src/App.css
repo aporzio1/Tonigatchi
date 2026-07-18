@@ -414,10 +414,13 @@
 }
 
 .control-button {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   width: 64px;
   height: 64px;
-  place-items: center;
+  align-items: center;
+  justify-content: center;
+  gap: 0.14rem;
   border: 0;
   border-radius: 50%;
   color: #4a1111;
@@ -439,14 +442,12 @@
 }
 
 .control-button span {
-  align-self: end;
-  margin-bottom: -0.55rem;
+  margin: 0;
   font-size: 0.52rem;
   font-weight: 700;
 }
 
 .control-button strong {
-  align-self: start;
   font-family: 'Archivo Black', Impact, sans-serif;
   font-size: 1.1rem;
   line-height: 1;
