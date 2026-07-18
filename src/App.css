@@ -230,7 +230,6 @@
   width: min(178px, 56vw);
   height: min(178px, 56vw);
   object-fit: contain;
-  mix-blend-mode: multiply;
   filter: grayscale(1) sepia(1) hue-rotate(35deg) saturate(0.8) contrast(1.35);
   image-rendering: pixelated;
 }

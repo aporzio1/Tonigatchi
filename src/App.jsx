@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import tonyIdle from './assets/tony_idle.png';
+import tonyIdle from './assets/tony_idle-transparent.png';
 import './App.css';
 
 const INITIAL_STATS = Object.freeze({ hunger: 50, stress: 50, respect: 50, health: 80 });
