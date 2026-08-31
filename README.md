@@ -13,9 +13,14 @@ npm run dev
 
 ```bash
 npm run lint
+npm test
 npm run build
 ```
 
+The game saves its current state in browser `localStorage`, so refreshing the page no longer resets Tony. Use the B button on the game-over screen to start a fresh game.
+
 ## GitHub Pages
 
-This project is configured for the `Tonigatchi` repository at `https://aporzio1.github.io/Tonigatchi/`. Build the project and deploy the generated `dist` directory to the `gh-pages` branch.
+The site is deployed automatically by GitHub Actions when `main` changes. Enable GitHub Pages for the repository with **GitHub Actions** as the source. The expected URL is:
+
+https://aporzio1.github.io/Tonigatchi/

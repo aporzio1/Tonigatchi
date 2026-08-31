@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import tonyIdle from './assets/tony_idle-transparent.png';
+import {
+  applyAction,
+  INITIAL_GAME,
+  parseSave,
+  serializeSave,
+  STORAGE_KEY,
+  tickStats,
+} from './gameLogic';
 import './App.css';
 
-const INITIAL_STATS = Object.freeze({ hunger: 50, stress: 50, respect: 50, health: 80 });
 const GAME_OVER_MESSAGE = "Don't stop believing... (Screen cuts to black)";
 
 const MENU_ITEMS = [
@@ -35,8 +42,6 @@ const ACTION_RESULTS = {
   ducks: { message: 'The ducks are back. He is happy.', state: 'ducks' },
 };
 
-const clamp = (value) => Math.max(0, Math.min(100, value));
-
 function formatClock(totalMinutes) {
   const minutesInDay = 24 * 60;
   const time = totalMinutes % minutesInDay;
@@ -46,14 +51,15 @@ function formatClock(totalMinutes) {
 }
 
 function App() {
-  const [stats, setStats] = useState(INITIAL_STATS);
-  const [message, setMessage] = useState('Woke up this morning...');
-  const [tonyState, setTonyState] = useState('idle');
-  const [isAsleep, setIsAsleep] = useState(false);
-  const [selectedMenuIndex, setSelectedMenuIndex] = useState(0);
-  const [screenMode, setScreenMode] = useState('home');
-  const [gameMinutes, setGameMinutes] = useState(8 * 60 + 30);
-  const [careStreak, setCareStreak] = useState(0);
+  const [initialGame] = useState(() => parseSave(window.localStorage.getItem(STORAGE_KEY)) ?? INITIAL_GAME);
+  const [stats, setStats] = useState(initialGame.stats);
+  const [message, setMessage] = useState(initialGame.message);
+  const [tonyState, setTonyState] = useState(initialGame.tonyState);
+  const [isAsleep, setIsAsleep] = useState(initialGame.isAsleep);
+  const [selectedMenuIndex, setSelectedMenuIndex] = useState(initialGame.selectedMenuIndex);
+  const [screenMode, setScreenMode] = useState(initialGame.screenMode);
+  const [gameMinutes, setGameMinutes] = useState(initialGame.gameMinutes);
+  const [careStreak, setCareStreak] = useState(initialGame.careStreak);
   const actionTimerRef = useRef(null);
   const tickRef = useRef(0);
   const isDead = stats.health === 0;
@@ -68,18 +74,7 @@ function App() {
     const timer = window.setInterval(() => {
       tickRef.current += 1;
       setGameMinutes((minutes) => minutes + 10);
-      setStats((previousStats) => {
-        const hunger = clamp(previousStats.hunger - (isAsleep ? 1 : 2));
-        const stress = clamp(previousStats.stress + (isAsleep ? -1 : 1));
-        const healthPenalty = hunger < 10 || stress > 90 ? 2 : 0;
-
-        return {
-          hunger,
-          stress,
-          respect: clamp(previousStats.respect - (isAsleep ? 0 : 0.5)),
-          health: clamp(previousStats.health + (isAsleep ? 1 : -healthPenalty)),
-        };
-      });
+      setStats((previousStats) => tickStats(previousStats, isAsleep));
 
       if (!isAsleep && tickRef.current % 8 === 0 && Math.random() > 0.45) {
         setMessage(EVENT_MESSAGES[Math.floor(Math.random() * EVENT_MESSAGES.length)]);
@@ -91,6 +86,17 @@ function App() {
 
   useEffect(() => () => window.clearTimeout(actionTimerRef.current), []);
 
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, serializeSave({
+      stats,
+      message,
+      isAsleep,
+      selectedMenuIndex,
+      gameMinutes,
+      careStreak,
+    }));
+  }, [careStreak, gameMinutes, isAsleep, message, selectedMenuIndex, stats]);
+
   const runAction = useCallback((action) => {
     if (isDead || isAsleep) return;
 
@@ -101,20 +107,7 @@ function App() {
     setCareStreak((streak) => streak + 1);
     actionTimerRef.current = window.setTimeout(() => setTonyState('idle'), 1200);
 
-    setStats((previousStats) => {
-      switch (action) {
-        case 'eat':
-          return { ...previousStats, hunger: clamp(previousStats.hunger + 30), health: clamp(previousStats.health + 5), stress: clamp(previousStats.stress + 5) };
-        case 'therapy':
-          return { ...previousStats, stress: clamp(previousStats.stress - 40), respect: clamp(previousStats.respect - 5) };
-        case 'collect':
-          return { ...previousStats, respect: clamp(previousStats.respect + 20), stress: clamp(previousStats.stress + 10) };
-        case 'ducks':
-          return { ...previousStats, stress: clamp(previousStats.stress - 20), health: clamp(previousStats.health + 2) };
-        default:
-          return previousStats;
-      }
-    });
+    setStats((previousStats) => applyAction(previousStats, action));
   }, [isAsleep, isDead]);
 
   const toggleSleep = useCallback(() => {
@@ -129,22 +122,21 @@ function App() {
 
   const restart = useCallback(() => {
     window.clearTimeout(actionTimerRef.current);
-    setStats(INITIAL_STATS);
-    setMessage('Woke up this morning...');
-    setTonyState('idle');
-    setIsAsleep(false);
-    setSelectedMenuIndex(0);
-    setScreenMode('home');
-    setGameMinutes(8 * 60 + 30);
-    setCareStreak(0);
+    setStats(INITIAL_GAME.stats);
+    setMessage(INITIAL_GAME.message);
+    setTonyState(INITIAL_GAME.tonyState);
+    setIsAsleep(INITIAL_GAME.isAsleep);
+    setSelectedMenuIndex(INITIAL_GAME.selectedMenuIndex);
+    setScreenMode(INITIAL_GAME.screenMode);
+    setGameMinutes(INITIAL_GAME.gameMinutes);
+    setCareStreak(INITIAL_GAME.careStreak);
     tickRef.current = 0;
   }, []);
 
   const moveMenu = useCallback((direction) => {
-    if (isDead) return;
-    setScreenMode('home');
+    if (isDead || screenMode === 'status') return;
     setSelectedMenuIndex((index) => (index + direction + MENU_ITEMS.length) % MENU_ITEMS.length);
-  }, [isDead]);
+  }, [isDead, screenMode]);
 
   const handleSelect = useCallback(() => {
     if (isDead) {
@@ -232,13 +224,13 @@ function App() {
         <div className="control-deck">
           <p className="controls-label">{screenMode === 'status' ? 'B TO RETURN' : isDead ? 'REBOOT THE BOSS' : `${currentMenu.label} / ${currentMenu.hint}`}</p>
           <div className="physical-controls">
-            <button className="control-button control-button-a" type="button" onClick={() => moveMenu(-1)} disabled={isDead} aria-label="Previous menu item">
+            <button className="control-button control-button-a" type="button" onClick={() => moveMenu(-1)} disabled={isDead || screenMode === 'status'} aria-label="Previous menu item">
               <span>A</span><strong>◀</strong>
             </button>
             <button className="control-button control-button-b" type="button" onClick={handleSelect} aria-label={isDead ? 'Restart game' : screenMode === 'status' ? 'Return to game' : `Select ${currentMenu.label}`}>
               <span>B</span><strong>{isDead ? '↻' : '●'}</strong>
             </button>
-            <button className="control-button control-button-c" type="button" onClick={() => moveMenu(1)} disabled={isDead} aria-label="Next menu item">
+            <button className="control-button control-button-c" type="button" onClick={() => moveMenu(1)} disabled={isDead || screenMode === 'status'} aria-label="Next menu item">
               <span>C</span><strong>▶</strong>
             </button>
           </div>
