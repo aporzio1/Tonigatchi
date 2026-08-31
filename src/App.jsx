@@ -13,11 +13,11 @@ import './App.css';
 const GAME_OVER_MESSAGE = "Don't stop believing... (Screen cuts to black)";
 
 const MENU_ITEMS = [
+  { id: 'status', icon: '▥', label: 'Status', hint: 'Care report' },
   { id: 'eat', icon: '▣', label: 'Feed', hint: 'Gabagool' },
   { id: 'therapy', icon: '☏', label: 'Talk', hint: 'Dr. Melfi' },
   { id: 'collect', icon: '$', label: 'Work', hint: 'Collections' },
   { id: 'ducks', icon: '≈', label: 'Ducks', hint: 'The pond' },
-  { id: 'status', icon: '▥', label: 'Status', hint: 'Care report' },
   { id: 'sleep', icon: '☾', label: 'Lights', hint: 'Go to bed' },
 ];
 
@@ -169,18 +169,23 @@ function App() {
 
   const closeScreen = useCallback(() => setScreenMode('home'), []);
 
+  const handleCancel = useCallback(() => {
+    if (isDead) return;
+    if (screenMode !== 'home') closeScreen();
+  }, [closeScreen, isDead, screenMode]);
+
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (['ArrowLeft', 'ArrowRight', 'Enter', 'Escape'].includes(event.key)) event.preventDefault();
       if (event.key === 'ArrowLeft') moveMenu(-1);
       if (event.key === 'ArrowRight') moveMenu(1);
       if (event.key === 'Enter') handleSelect();
-      if (event.key === 'Escape') closeScreen();
+      if (event.key === 'Escape') handleCancel();
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [closeScreen, handleSelect, moveMenu]);
+  }, [handleCancel, handleSelect, moveMenu]);
 
   return (
     <main className="app-shell">
@@ -199,6 +204,9 @@ function App() {
               <span className={!isDead && !isAsleep ? 'status-light' : ''}>{isDead ? 'OFF' : isAsleep ? 'SLEEP' : 'LIVE'}</span>
               <span>{formatClock(gameMinutes)}</span>
             </div>
+            {!isDead && (
+              <CareIconBar selectedIndex={selectedMenuIndex} />
+            )}
             <div className="screen-grid" aria-hidden="true" />
 
             {screenMode === 'status' ? (
@@ -214,27 +222,32 @@ function App() {
                   )}
                 </div>
                 <div className="floor-shadow" aria-hidden="true" />
-                {!isDead && <MenuCarousel selectedIndex={selectedMenuIndex} isAsleep={isAsleep} />}
-                <p className="screen-footer">{isDead ? 'PRESS B TO REBOOT' : `CARE STREAK ${careStreak.toString().padStart(2, '0')}`}</p>
+                {!isDead && (
+                  <p className="selected-action">
+                    <strong>{currentMenu.label}</strong>
+                    <span>{isAsleep && currentMenu.id !== 'sleep' ? 'Tony is sleeping' : currentMenu.hint}</span>
+                  </p>
+                )}
+                <p className="screen-footer">{isDead ? 'PRESS B TO REBOOT' : 'A: CHOOSE  B: OPEN  C: BACK'}</p>
               </>
             )}
           </div>
         </div>
 
         <div className="control-deck">
-          <p className="controls-label">{screenMode === 'status' ? 'B TO RETURN' : isDead ? 'REBOOT THE BOSS' : `${currentMenu.label} / ${currentMenu.hint}`}</p>
+          <p className="controls-label">{screenMode === 'status' ? 'C TO RETURN' : isDead ? 'REBOOT THE BOSS' : `${currentMenu.label} / ${currentMenu.hint}`}</p>
           <div className="physical-controls">
-            <button className="control-button control-button-a" type="button" onClick={() => moveMenu(-1)} disabled={isDead || screenMode === 'status'} aria-label="Previous menu item">
-              <span>A</span><strong>◀</strong>
+            <button className="control-button control-button-a" type="button" onClick={() => moveMenu(1)} disabled={isDead || screenMode === 'status'} aria-label="Choose next care icon">
+              <span>A / CHOOSE</span><strong>▶</strong>
             </button>
             <button className="control-button control-button-b" type="button" onClick={handleSelect} aria-label={isDead ? 'Restart game' : screenMode === 'status' ? 'Return to game' : `Select ${currentMenu.label}`}>
-              <span>B</span><strong>{isDead ? '↻' : '●'}</strong>
+              <span>B / OPEN</span><strong>{isDead ? '↻' : '●'}</strong>
             </button>
-            <button className="control-button control-button-c" type="button" onClick={() => moveMenu(1)} disabled={isDead || screenMode === 'status'} aria-label="Next menu item">
-              <span>C</span><strong>▶</strong>
+            <button className="control-button control-button-c" type="button" onClick={handleCancel} disabled={isDead || screenMode === 'home'} aria-label="Cancel or return">
+              <span>C / BACK</span><strong>↩</strong>
             </button>
           </div>
-          <p className="keyboard-help">← → browse &nbsp;•&nbsp; enter select &nbsp;•&nbsp; esc back</p>
+          <p className="keyboard-help">A chooses &nbsp;•&nbsp; B opens &nbsp;•&nbsp; C goes back</p>
         </div>
         <p className="device-footer">KEEP THE BOSS HAPPY</p>
       </section>
@@ -242,19 +255,16 @@ function App() {
   );
 }
 
-function MenuCarousel({ selectedIndex, isAsleep }) {
+function CareIconBar({ selectedIndex }) {
   return (
-    <div className="menu-carousel" aria-label={`Selected menu item: ${MENU_ITEMS[selectedIndex].label}`}>
-      <span className="menu-arrow" aria-hidden="true">◀</span>
-      <div className="selected-menu-item">
-        <strong aria-hidden="true">{MENU_ITEMS[selectedIndex].icon}</strong>
-        <span>{isAsleep && MENU_ITEMS[selectedIndex].id !== 'sleep' ? 'ZZZ' : MENU_ITEMS[selectedIndex].label}</span>
-      </div>
-      <span className="menu-arrow" aria-hidden="true">▶</span>
-      <div className="menu-pips" aria-hidden="true">
-        {MENU_ITEMS.map((item, index) => <i key={item.id} className={index === selectedIndex ? 'is-selected' : ''} />)}
-      </div>
-    </div>
+    <nav className="care-icon-bar" aria-label={`Care menu. Selected: ${MENU_ITEMS[selectedIndex].label}`}>
+      {MENU_ITEMS.map((item, index) => (
+        <div key={item.id} className={index === selectedIndex ? 'care-icon is-selected' : 'care-icon'}>
+          <strong aria-hidden="true">{item.icon}</strong>
+          <span>{item.label}</span>
+        </div>
+      ))}
+    </nav>
   );
 }
 
@@ -266,7 +276,7 @@ function StatusScreen({ stats, careStreak }) {
         {STATUS_CONFIG.map((stat) => <PixelMeter key={stat.id} {...stat} value={stats[stat.id]} />)}
       </div>
       <p className="status-streak">CARE STREAK <strong>{careStreak}</strong></p>
-      <p className="status-return">B: BACK</p>
+      <p className="status-return">C: BACK</p>
     </div>
   );
 }
@@ -276,7 +286,7 @@ function PixelMeter({ label, value, inverse = false }) {
 
   return (
     <div className="pixel-meter" role="progressbar" aria-label={label} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(value)}>
-      <span>{label}</span>
+      <span>{label} {Math.round(inverse ? 100 - value : value)}%</span>
       <div aria-hidden="true">{[0, 1, 2, 3, 4].map((pip) => <i key={pip} className={pip < filledPips ? 'is-filled' : ''} />)}</div>
     </div>
   );

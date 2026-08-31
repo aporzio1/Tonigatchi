@@ -115,9 +115,9 @@
   font-family: 'Archivo Black', Impact, sans-serif;
   font-size: clamp(2rem, 10vw, 3rem);
   font-weight: 400;
-  letter-spacing: -0.09em;
+  letter-spacing: -0.025em;
   line-height: 0.86;
-  transform: scaleX(1.06);
+  transform: scaleX(1.02);
 }
 
 .device-marquee h1 span {
@@ -182,6 +182,54 @@
   justify-content: space-between;
   font-size: 0.57rem;
   font-weight: 600;
+}
+
+.care-icon-bar {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.16rem;
+  margin-top: 0.45rem;
+  padding: 0.28rem;
+  border: 2px solid rgba(35, 53, 36, 0.55);
+  background: rgba(223, 234, 144, 0.32);
+}
+
+.care-icon {
+  display: grid;
+  min-width: 0;
+  min-height: 2.2rem;
+  place-items: center;
+  padding: 0.12rem 0.04rem;
+  border: 1px solid transparent;
+  color: rgba(35, 53, 36, 0.63);
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  text-align: center;
+}
+
+.care-icon strong {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.care-icon span {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 0.35rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.care-icon.is-selected {
+  border-color: #233524;
+  color: #233524;
+  background: rgba(35, 53, 36, 0.17);
+  box-shadow: inset 0 0 0 1px rgba(35, 53, 36, 0.28);
 }
 
 .status-light::before {
@@ -270,63 +318,28 @@
   text-align: center;
 }
 
-.menu-carousel {
+.selected-action {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 1.4rem 1fr 1.4rem;
-  align-items: center;
-  min-height: 43px;
-  margin-top: 0.15rem;
+  min-height: 39px;
+  align-content: center;
+  margin-top: 0.22rem;
   border-top: 2px solid rgba(35, 53, 36, 0.55);
   font-family: 'IBM Plex Mono', 'Courier New', monospace;
   text-align: center;
-}
-
-.menu-arrow {
-  font-size: 0.6rem;
-  opacity: 0.72;
-}
-
-.selected-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.selected-menu-item strong {
-  display: grid;
-  width: 1.25rem;
-  height: 1.25rem;
-  place-items: center;
-  border: 1px solid #233524;
-  font-size: 0.87rem;
+.selected-action strong {
+  font-size: 0.67rem;
+  letter-spacing: 0.09em;
 }
 
-.menu-pips {
-  position: absolute;
-  right: 0;
-  bottom: 0.17rem;
-  left: 0;
-  display: flex;
-  justify-content: center;
-  gap: 0.2rem;
-}
-
-.menu-pips i {
-  width: 3px;
-  height: 3px;
-  background: rgba(35, 53, 36, 0.35);
-}
-
-.menu-pips .is-selected {
-  width: 9px;
-  background: #233524;
+.selected-action span {
+  margin-top: 0.16rem;
+  font-size: 0.48rem;
+  font-weight: 600;
 }
 
 .status-screen {
@@ -443,7 +456,7 @@
 
 .control-button span {
   margin: 0;
-  font-size: 0.52rem;
+  font-size: 0.42rem;
   font-weight: 700;
 }
 
@@ -491,6 +504,7 @@
   .physical-controls { gap: 0.65rem; }
   .control-button { width: 57px; height: 57px; }
   .control-button-b { width: 64px; height: 64px; }
+  .care-icon span { font-size: 0.31rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
